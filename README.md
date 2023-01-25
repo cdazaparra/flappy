@@ -1,5 +1,7 @@
 # Getting Started with Create React App
 
+npm i kaboom
+npm i prettier
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
