@@ -13,110 +13,198 @@ export const Game = () => {
 			canvas: canvasRef.current,
 		})
 
-		k.add([k.text('oh hi'), k.pos(40, 10)])
-
 		// write all your kaboom code here
-		// load assets
-		k.loadSprite('birdy', 'sprites/bird.png')
-		k.loadSprite('bg', 'sprites/bg.png')
-		k.loadSprite('pipe', 'sprites/pipe.png')
-		k.loadSound('wooosh', 'sounds/wooosh.mp3')
+		// Load assets
+		k.loadSprite('bird', '/sprites/bird.png')
+		k.loadSprite('ghosty', '/sprites/ghosty.png')
+		k.loadSprite('grass', '/sprites/grass.png')
+		k.loadSprite('vertical', '/sprites/vertical.png')
+		k.loadSprite('horizontal', '/sprites/horizontal.png')
+		k.loadSprite('bg', '/sprites/bg.png')
+		k.loadSprite('nutria', '/sprites/nutria.png', {
+			// The image contains 9 frames layed out horizontally, slice it into individual frames
+			sliceX: 30,
+			// Define animations
+			anims: {
+				idle: {
+					// Starts from frame 0, ends at frame 3
+					from: 0,
+					to: 29,
+					// Frame per second
+					speed: 10,
+					loop: true,
+				},
+				run: {
+					from: 0,
+					to: 29,
+					speed: 10,
+					loop: true,
+				},
+				// This animation only has 1 frame
+				jump: 8,
+			},
+		})
+		k.loadSprite('glotona', '/sprites/glotona.png', {
+			// The image contains 9 frames layed out horizontally, slice it into individual frames
+			sliceX: 18,
+			// Define animations
+			anims: {
+				idle: {
+					// Starts from frame 0, ends at frame 3
+					from: 0,
+					to: 17,
+					// Frame per second
+					speed: 10,
+					loop: true,
+				},
+				run: {
+					from: 0,
+					to: 17,
+					speed: 10,
+					loop: true,
+				},
+				// This animation only has 1 frame
+				jump: 8,
+			},
+		})
+		k.loadSprite('dino', '/sprites/dino.png', {
+			// The image contains 9 frames layed out horizontally, slice it into individual frames
+			sliceX: 24,
+			// Define animations
+			anims: {
+				idle: {
+					// Starts from frame 0, ends at frame 3
+					from: 0,
+					to: 23,
+					// Frame per second
+					speed: 5,
+					loop: true,
+				},
+				run: {
+					from: 0,
+					to: 23,
+					speed: 10,
+					loop: true,
+				},
+				// This animation only has 1 frame
+				jump: 8,
+			},
+		})
+		k.add([k.sprite('bg')])
+		// Define player movement speed
+		const SPEED = 320
 
-		let highScore = 0
-		k.scene('game', () => {
-			const PIPE_GAP = 120
-			let score = 0
+		// Add player game object
+		const player = k.add([
+			k.sprite('dino'),
+			k.pos(580, 540),
+			k.color(),
+			// area() component gives the object a collider, which enables collision checking
+			k.area(),
+			// solid() component makes the object can't move pass other solid objects
+			k.solid(),
+		])
+		player.play('idle')
+		// Register input handlers & movement
+		const nutria = k.add([
+			k.sprite('nutria'),
+			k.pos(520, 500),
+			k.color(),
+			// area() component gives the object a collider, which enables collision checking
+			k.area(),
+			// solid() component makes the object can't move pass other solid objects
+			k.solid(),
+		])
+		nutria.play('idle')
+		// Register input handlers & movement
+		const glotona = k.add([
+			k.sprite('glotona'),
+			k.pos(80, 40),
+			k.color(),
+			// area() component gives the object a collider, which enables collision checking
+			k.area(),
+			// solid() component makes the object can't move pass other solid objects
+			k.solid(),
+		])
+		glotona.play('idle')
+
+		k.onKeyDown('left', () => {
+			player.move(-SPEED, 0)
+		})
+
+		k.onKeyDown('right', () => {
+			player.move(SPEED, 0)
+		})
+
+		k.onKeyDown('up', () => {
+			player.move(0, -SPEED)
+		})
+
+		k.onKeyDown('down', () => {
+			player.move(0, SPEED)
+		})
+
+		// Add enemies
+		for (let i = 0; i < 3; i++) {
+			const x = k.rand(0, k.width())
+			const y = k.rand(0, k.height())
 
 			k.add([
-				k.sprite('bg', { width: k.width(), height: k.height() + 300 }),
-			])
-
-			const scoreText = k.add([k.text(score, { size: 50 })])
-
-			// add a game object to screen
-			const player = k.add([
-				// list of components
-				k.sprite('birdy'),
-				k.scale(2),
-				k.pos(80, 40),
+				k.sprite('ghosty'),
+				k.pos(x, y),
+				// Both objects must have area() component to enable collision detection between
 				k.area(),
-				k.body(),
+				'enemy',
 			])
+		}
 
-			function producePipes() {
-				const offset = k.rand(-100, 100)
-
-				k.add([
-					k.sprite('pipe'),
-					k.pos(k.width(), k.height() / 2 + offset + PIPE_GAP / 2),
-					'pipe',
-					k.area(),
-					{ passed: false },
-				])
-
-				k.add([
-					k.sprite('pipe', { flipY: true }),
-					k.pos(k.width(), k.height() / 2 + offset - PIPE_GAP / 2),
-					k.origin('botleft'),
-					'pipe',
-					k.area(),
-				])
-			}
-
-			k.loop(1.5, () => {
-				producePipes()
-			})
-
-			k.action('pipe', (pipe) => {
-				pipe.move(-160, 0)
-
-				if (pipe.passed === false && pipe.pos.x < player.pos.x) {
-					pipe.passed = true
-					score += 1
-					scoreText.text = score
-				}
-			})
-
-			player.collides('pipe', () => {
-				k.go('gameover', score)
-			})
-
-			player.action(() => {
-				if (player.pos.y > k.height() + 30 || player.pos.y < -30) {
-					k.go('gameover', score)
-				}
-			})
-
-			k.keyPress('space', () => {
-				k.play('wooosh')
-				player.jump(400)
-			})
-		})
-		k.scene('gameover', (score) => {
-			if (score > highScore) {
-				highScore = score
-			}
-
-			k.add([
-				k.text(
-					'gameover!\n' +
-						'score: ' +
-						score +
-						'\nhigh score: ' +
-						highScore,
-					{
-						size: 45,
-					}
-				),
-			])
-
-			k.keyPress('space', () => {
-				k.go('game')
-			})
+		k.add([
+			k.sprite('grass'),
+			k.pos(k.center()),
+			k.area(),
+			// This game object also has solid(), so our player won't be able to move pass this
+			k.solid(),
+		])
+		k.add([
+			k.sprite('vertical'),
+			k.pos(180, 100),
+			k.area(),
+			// This game object also has solid(), so our player won't be able to move pass this
+			k.solid(),
+		])
+		k.add([
+			k.sprite('horizontal'),
+			k.pos(450, 430),
+			k.area(),
+			// This game object also has solid(), so our player won't be able to move pass this
+			k.solid(),
+		])
+		// .onCollide() is provided by area() component, it registers an event that runs when an objects collides with another object with certain tag
+		// In this case we destroy (remove from game) the enemy when player hits one
+		player.onCollide('enemy', (enemy) => {
+			k.destroy(enemy)
 		})
 
-		k.go('game')
+		// .clicks() is provided by area() component, it registers an event that runs when the object is clicked
+		player.onClick(() => {
+			k.debug.log('what up')
+		})
+
+		player.onUpdate(() => {
+			// .isHovering() is provided by area() component, which returns a boolean of if the object is currently being hovered on
+			if (player.isHovering()) {
+				player.color = k.rgb(0, 0, 255)
+			} else {
+				player.color = k.rgb()
+			}
+		})
+
+		// Enter inspect mode, which shows the collider outline of each object with area() component, handy for debugging
+		// Can also be toggled by pressing F1
+		k.debug.inspect = true
+
+		// Check out https://kaboomjs.com#AreaComp for everything area() provides
 	}, [])
 
-	return <canvas ref={canvasRef}></canvas>
+	return <canvas ref={canvasRef} height='800'></canvas>
 }
